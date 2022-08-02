@@ -1,6 +1,6 @@
 
 class RedisDb:
-    def __init__(redis_client):
+    def __init__(self, redis_client):
         self.db = redis_client
 
     def get(self, key):
