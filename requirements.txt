@@ -3,3 +3,4 @@ https://github.com/New-dev0/Telethon/archive/Aurium.zip
 localdb.json
 python-dotenv
 python-decouple
+redis
