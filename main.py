@@ -3,8 +3,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from decouple import config
 
 process = []
-START_TIME = config("START_TIME", default=None)
-STOP_TIME = config("STOP_TIME", default=None)
+START_TIME = config("START_TIME", default="6:0")
+STOP_TIME = config("STOP_TIME", default="1:30")
 
 def start():
     kill()
