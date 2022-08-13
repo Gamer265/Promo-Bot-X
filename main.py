@@ -26,7 +26,7 @@ def kill():
 async def job():
     sched = AsyncIOScheduler(timezone="Asia/Kolkata")
     sched.add_job(start, "cron", hour=START_TIME.split(":")[0], minute=START_TIME.split(":")[1])  # start time
-    sched.add_job(kill, "cron", hour=STOP_TIME.split(":")[0], minute=STOO_TIME.split(":")[1])  # stop time
+    sched.add_job(kill, "cron", hour=STOP_TIME.split(":")[0], minute=STOP_TIME.split(":")[1])  # stop time
     sched.start()
 
 if START_TIME and STOP_TIME:
