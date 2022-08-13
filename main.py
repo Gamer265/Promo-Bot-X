@@ -29,9 +29,12 @@ async def job():
     sched.add_job(kill, "cron", hour=STOP_TIME.split(":")[0], minute=STOP_TIME.split(":")[1])  # stop time
     sched.start()
 
+loop = asyncio.get_event_loop()
+
 if START_TIME and STOP_TIME:
-    loop = asyncio.get_event_loop()
     loop.run_until_complete(job())
-    loop.run_forever()
-else:
-    start()
+    
+
+start()
+
+loop.run_forever()
