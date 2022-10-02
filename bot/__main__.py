@@ -1,3 +1,4 @@
+from os import sched_get_priority_max
 from . import *
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telethon.utils import get_peer_id
@@ -7,9 +8,16 @@ try:
 except Exception as erc:
     log.info(str(erc))
 
+sched = AsyncIOScheduler(timezone="Asia/Kolkata")
 FUTURE = []
 n = [0]
 _n = [0]
+
+def update_msg_for_delete(id):
+    lst = dB.get("DELETE_MSG") or []
+    if id not in lst:
+        lst.append(id)
+        dB.set("DELETE_MSG", lst)
 
 
 @bot.on(events.NewMessage(incoming=True, pattern="^/start"))
@@ -110,7 +118,8 @@ async def on_new_post(e):
                 _n[0] = 0
             xn = promos[_n[0]]
             msg = await bot.get_messages(STORAGE_CHANNEL, ids=xn)
-            await bot.send_message(MAIN_CHANNEL, msg)
+            sxx = await bot.send_message(MAIN_CHANNEL, msg)
+            update_msg_for_delete(sxx.id)
             _n[0] += 1
     except Exception as ex:
         log.error(str(ex))
@@ -129,6 +138,7 @@ async def _(e):
         FUTURE.append(future)
         dB.set("EVERY_MIN", True)
         future.start()
+        job()
     else:
         await e.reply("Msg post funcn already runningF")
 
@@ -140,9 +150,11 @@ async def _(e):
         FUTURE[0].remove_job("every_x_job")
         FUTURE.clear()
         dB.delete("EVERY_MIN")
+        stop_job()
         await x.edit("`Done.`")
     else:
         await e.reply("Post func is not running.")
+
 
 @bot.on(events.callbackquery.CallbackQuery(data=re.compile("kstartpromo")))
 async def _(e):
@@ -182,15 +194,29 @@ async def restart(event):
  
 async def on_every_min():
     try:
-        promos = dB.get("PROMO_DATA") or []
+        promos = dB.get("PROMO_DATA") or [] 
         if len(promos) <= n[0]:
             n[0] = 0
         xn = promos[n[0]]
         msg = await bot.get_messages(STORAGE_CHANNEL, ids=xn)
-        await bot.send_message(MAIN_CHANNEL, msg)
+        sxx = await bot.send_message(MAIN_CHANNEL, msg)
+        update_msg_for_delete(sxx.id)
         n[0] += 1
     except Exception as error:
         log.error(str(error))
+
+async def deleting_post():
+    msgs = dB.get("DELETE_MSG") or []
+    if msgs:
+        try:
+            log.info("Deleting Proccess Started...")
+            for id in msgs:
+                msg = await bot.get_messages(MAIN_CHANNEL, ids=id)
+                await msg.delete()
+            log.info(f"Succesfully Deleted {len(msgs)} Messages.")
+            dB.delete("DELETE_MSG")
+        except Exception as error:
+            log.error(str(error))
 
 
 async def onstart():
@@ -202,6 +228,36 @@ async def onstart():
             dB.delete("RESTART")
     except BaseException:
         dB.delete("RESTART")
+
+
+async def speed_start():
+    if FUTURE and dB.get("EVERY_MIN"):
+        FUTURE[0].remove_job("every_x_job")
+        FUTURE.clear()
+        _inter = SPEED
+        _future = AsyncIOScheduler()
+        _future.add_job(on_every_min, "interval", minutes=_inter, id="severy_x_job")
+        FUTURE.append(_future)
+        _future.start()
+
+async def stop_speed_start():
+    if FUTURE and dB.get("EVERY_MIN"):
+        FUTURE[0].remove_job("severy_x_job")
+        FUTURE.clear()
+        _inter = dB.get("INTERVAL") or 30
+        _future = AsyncIOScheduler()
+        _future.add_job(on_every_min, "interval", minutes=_inter, id="every_x_job")
+        FUTURE.append(_future)
+        _future.start()
+
+def job():
+    if FUTURE and dB.get("EVERY_MIN"):
+        sched.add_job(speed_start, "cron", hour=SPEED_START_TIME)# start time
+        sched.add_job(stop_speed_start, "cron", hour=SPEED_STOP_TIME)  # stop time
+        sched.start()
+
+def stop_job():
+    sched.shutdown(wait=False)
         
 
 if dB.get("KEYPROMO"):
@@ -214,8 +270,16 @@ if dB.get("EVERY_MIN"):
         _future.add_job(on_every_min, "interval", minutes=_inter, id="every_x_job")
         FUTURE.append(_future)
         _future.start()
+    job()
 
 
+log.info("Initialising Deletation....")
+
+sch = AsyncIOScheduler()
+sch.add_job(deleting_post, "interval", hours=24)
+sch.start()
+
+log.info("Deleting Proccess Initisalised...")
 
 log.info("Started bot")
 bot.loop.run_until_complete(onstart())
