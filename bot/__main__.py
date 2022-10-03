@@ -205,16 +205,20 @@ async def on_every_min():
     except Exception as error:
         log.error(str(error))
 
-async def deleting_post():
+@bot.on(events.NewMessage())
+async def deleting_post(event):
+    x = MAIN_CHANNEL
+    th = await event.get_chat()
+    id = get_peer_id(th)
+    if id != x:
+        return
     msgs = dB.get("DELETE_MSG") or []
     if msgs:
         try:
-            log.info("Deleting Proccess Started...")
-            for id in msgs:
-                msg = await bot.get_messages(MAIN_CHANNEL, ids=id)
+            if event.id in msgs:
+                await asyncio.sleep(60*60*24)
+                msg = await bot.get_messages(MAIN_CHANNEL, ids=event.id)
                 await msg.delete()
-            log.info(f"Succesfully Deleted {len(msgs)} Messages.")
-            dB.delete("DELETE_MSG")
         except Exception as error:
             log.error(str(error))
 
@@ -275,11 +279,6 @@ if dB.get("EVERY_MIN"):
 
 log.info("Initialising Deletation....")
 
-sch = AsyncIOScheduler()
-sch.add_job(deleting_post, "interval", hours=24)
-sch.start()
-
-log.info("Deleting Proccess Initisalised...")
 
 log.info("Started bot")
 bot.loop.run_until_complete(onstart())
