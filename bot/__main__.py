@@ -207,18 +207,17 @@ async def on_every_min():
 
 @bot.on(events.NewMessage())
 async def deleting_post(event):
-    x = MAIN_CHANNEL
-    th = await event.get_chat()
-    id = get_peer_id(th)
-    if id != x:
+    id = get_peer_id(event.chat)
+    if id != MAIN_CHANNEL:
         return
     msgs = dB.get("DELETE_MSG") or []
     if msgs:
         try:
             if event.id in msgs:
+                log.info("going to sleep")
                 await asyncio.sleep(60)
-                msg = await bot.get_messages(MAIN_CHANNEL, ids=event.id)
-                await msg.delete()
+                await event.delete()
+                log.info("deleted")
         except Exception as error:
             log.error(str(error))
 
