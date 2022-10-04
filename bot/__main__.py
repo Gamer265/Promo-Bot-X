@@ -216,7 +216,7 @@ async def deleting_post(event):
     if msgs:
         try:
             if event.id in msgs:
-                await asyncio.sleep(60*60*24)
+                await asyncio.sleep(60)
                 msg = await bot.get_messages(MAIN_CHANNEL, ids=event.id)
                 await msg.delete()
         except Exception as error:
