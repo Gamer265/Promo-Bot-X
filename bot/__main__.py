@@ -1,4 +1,3 @@
-from os import sched_get_priority_max
 from . import *
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telethon.utils import get_peer_id
@@ -13,11 +12,26 @@ FUTURE = []
 n = [0]
 _n = [0]
 
+
 def update_msg_for_delete(id):
     lst = dB.get("DELETE_MSG") or []
     if id not in lst:
         lst.append(id)
         dB.set("DELETE_MSG", lst)
+
+
+@bot.on(events.NewMessage(chats=[MAIN_CHANNEL]))
+async def deleting_post(event):
+    try:
+        await asyncio.sleep(3)  # delay so other func can append id in db
+        lst = dB.get("DELETE_MSG")
+        if lst and event.id in dB.get("DELETE_MSG"):
+            await asyncio.sleep(60)
+            lst.remove(event.id)
+            dB.set("DELETE_MSG", lst)
+            await event.delete()
+    except Exception as error:
+        log.error(str(error))
 
 
 @bot.on(events.NewMessage(incoming=True, pattern="^/start"))
@@ -71,11 +85,15 @@ async def addchh(event):
     dB.set("PROMO_DATA", chs)
     await event.reply(f"`Succesfully Added {len(chs)} Messages In Promo List.`")
 
+
 @bot.on(events.NewMessage(incoming=True, pattern="^/status"))
 async def addchh(event):
     if str(event.sender_id) not in OWNER:
         return
-    await event.reply(f'`In Every X Min - {"Running..." if dB.get("EVERY_MIN") else "Stopped"}\nKeyword Promo - {"Running..." if dB.get("KEYPROMO") else "Stopped"}`')
+    await event.reply(
+        f'`In Every X Min - {"Running..." if dB.get("EVERY_MIN") else "Stopped"}\nKeyword Promo - {"Running..." if dB.get("KEYPROMO") else "Stopped"}`'
+    )
+
 
 @bot.on(events.NewMessage(incoming=True, pattern="^/interval"))
 async def intt(event):
@@ -99,9 +117,6 @@ async def sett(event):
         return await event.reply("`Invalid Input`")
     dB.set("SPECIAL_WORD", key)
     await event.reply("`Done.`")
-
-
-
 
 
 async def on_new_post(e):
@@ -171,6 +186,7 @@ async def _(e):
     else:
         await e.reply("Msg post funcn already runningF")
 
+
 @bot.on(events.callbackquery.CallbackQuery(data=re.compile("mkstoppromo")))
 async def _(e):
     if dB.get("KEYPROMO"):
@@ -191,10 +207,10 @@ async def restart(event):
     dB.set("RESTART", [x.id, x.chat_id])
     os.execl(sys.executable, sys.executable, "-m", "bot")
 
- 
+
 async def on_every_min():
     try:
-        promos = dB.get("PROMO_DATA") or [] 
+        promos = dB.get("PROMO_DATA") or []
         if len(promos) <= n[0]:
             n[0] = 0
         xn = promos[n[0]]
@@ -204,22 +220,6 @@ async def on_every_min():
         n[0] += 1
     except Exception as error:
         log.error(str(error))
-
-@bot.on(events.NewMessage())
-async def deleting_post(event):
-    id = get_peer_id(event.chat)
-    if id != MAIN_CHANNEL:
-        return
-    msgs = dB.get("DELETE_MSG") or []
-    if msgs:
-        try:
-            if event.id in msgs:
-                log.info("going to sleep")
-                await asyncio.sleep(60)
-                await event.delete()
-                log.info("deleted")
-        except Exception as error:
-            log.error(str(error))
 
 
 async def onstart():
@@ -243,6 +243,7 @@ async def speed_start():
         FUTURE.append(_future)
         _future.start()
 
+
 async def stop_speed_start():
     if FUTURE and dB.get("EVERY_MIN"):
         FUTURE[0].remove_job("severy_x_job")
@@ -253,15 +254,17 @@ async def stop_speed_start():
         FUTURE.append(_future)
         _future.start()
 
+
 def job():
     if FUTURE and dB.get("EVERY_MIN"):
-        sched.add_job(speed_start, "cron", hour=SPEED_START_TIME)# start time
+        sched.add_job(speed_start, "cron", hour=SPEED_START_TIME)  # start time
         sched.add_job(stop_speed_start, "cron", hour=SPEED_STOP_TIME)  # stop time
         sched.start()
 
+
 def stop_job():
     sched.shutdown(wait=False)
-        
+
 
 if dB.get("KEYPROMO"):
     bot.add_event_handler(on_new_post, events.NewMessage())
