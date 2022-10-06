@@ -13,25 +13,35 @@ n = [0]
 _n = [0]
 
 
-def update_msg_for_delete(id):
+async def update_msg_for_delete(e):
     lst = dB.get("DELETE_MSG") or []
-    if id not in lst:
-        lst.append(id)
+    if e.id not in lst:
+        lst.append(e.id)
         dB.set("DELETE_MSG", lst)
-
-
-@bot.on(events.NewMessage(chats=[MAIN_CHANNEL]))
-async def deleting_post(event):
-    try:
-        await asyncio.sleep(3)  # delay so other func can append id in db
-        lst = dB.get("DELETE_MSG")
-        if lst and event.id in dB.get("DELETE_MSG"):
-            await asyncio.sleep(60)
-            lst.remove(event.id)
+        await asyncio.sleep(60)
+        try:
+            await e.delete()
+            print(e.id, "deleted")
+        except BaseException:
+            pass
+        lst = dB.get("DELETE_MSG") or []
+        if e.id in lst:
+            lst.remove(e.id)
             dB.set("DELETE_MSG", lst)
-            await event.delete()
-    except Exception as error:
-        log.error(str(error))
+
+
+# @bot.on(events.NewMessage(chats=[MAIN_CHANNEL]))
+# async def deleting_post(event):
+#     try:
+#         await asyncio.sleep(3)  # delay so other func can append id in db
+#         lst = dB.get("DELETE_MSG")
+#         if lst and event.id in dB.get("DELETE_MSG"):
+#             await asyncio.sleep(60)
+#             lst.remove(event.id)
+#             dB.set("DELETE_MSG", lst)
+#             await event.delete()
+#     except Exception as error:
+#         log.error(str(error))
 
 
 @bot.on(events.NewMessage(incoming=True, pattern="^/start"))
@@ -134,7 +144,7 @@ async def on_new_post(e):
             xn = promos[_n[0]]
             msg = await bot.get_messages(STORAGE_CHANNEL, ids=xn)
             sxx = await bot.send_message(MAIN_CHANNEL, msg)
-            update_msg_for_delete(sxx.id)
+            asyncio.ensure_future(update_msg_for_delete(sxx))
             _n[0] += 1
     except Exception as ex:
         log.error(str(ex))
@@ -216,7 +226,7 @@ async def on_every_min():
         xn = promos[n[0]]
         msg = await bot.get_messages(STORAGE_CHANNEL, ids=xn)
         sxx = await bot.send_message(MAIN_CHANNEL, msg)
-        update_msg_for_delete(sxx.id)
+        asyncio.ensure_future(update_msg_for_delete(sxx))
         n[0] += 1
     except Exception as error:
         log.error(str(error))
