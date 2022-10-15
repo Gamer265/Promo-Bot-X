@@ -18,7 +18,7 @@ async def update_msg_for_delete(e):
     if e.id not in lst:
         lst.append(e.id)
         dB.set("DELETE_MSG", lst)
-        await asyncio.sleep(60*60*24)
+        await asyncio.sleep(1800)
         try:
             await e.delete()
             print(e.id, "deleted")
