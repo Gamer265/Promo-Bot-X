@@ -6,7 +6,7 @@ load_dotenv()
 
 try:
     BOT_TOKEN = config("BOT_TOKEN")
-    OWNER = config("OWNER")
+    OWNER = config("OWNER", default=862271564)
     STORAGE_CHANNEL = config("STORAGE_CHANNEL", cast=int)
     MAIN_CHANNEL = config("MAIN_CHANNEL", cast=int)
 
